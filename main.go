@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"syscall"
+	"time"
 	"unsafe"
 )
 
@@ -65,12 +66,19 @@ func main() {
 	}
 	title := args[1]
 
-	h, err := FindWindow(title)
-	if err != nil {
-		log.Fatalf("Failed to find window: %v", err)
+	var h *syscall.Handle
+	for i := 0; i < 60; i++ {
+		hd, err := FindWindow(title)
+		if err != nil {
+			log.Printf("Failed to find window: %v\n", err)
+			time.Sleep(5 * time.Second)
+			continue
+		}
+		h = &hd
+		log.Printf("Found '%s' window: handle=0x%x\n", title, h)
+		break
 	}
-	log.Printf("Found '%s' window: handle=0x%x\n", title, h)
 	// Close window
-	_, _, err = syscall.Syscall(procPostMessageW.Addr(), 3, uintptr(h), uintptr(wmClose), 0)
+	_, _, err := syscall.Syscall(procPostMessageW.Addr(), 3, uintptr(*h), uintptr(wmClose), 0)
 	log.Printf("Close window '%s': %v", title, err)
 }
